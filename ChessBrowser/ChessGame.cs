@@ -25,7 +25,7 @@ namespace ChessBrowser
         public int bpID { get; set; }
         public ChessGame()
         {
-            Moves = new List<string>();
+
         }
 
     }

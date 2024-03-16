@@ -136,8 +136,9 @@ namespace ChessBrowser
                 {
                     System.Diagnostics.Debug.WriteLine(e.Message);
                 }
-                
+
             }
+        }
 
             /// <summary>
             /// Queries the database for games that match all the given filters.
@@ -265,4 +266,4 @@ namespace ChessBrowser
             }
         }
     }
-}
+
