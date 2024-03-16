@@ -18,9 +18,12 @@ namespace ChessBrowser
         public string BlackElo { get; set; }
         public string Result { get; set; }
         public string EventDate { get; set; }
+        public string ECO { get; set; }
+
+        public List<string> Moves { get; set; }
         public ChessGame()
         {
-     
+            Moves = new List<string>();
         }
 
     }
