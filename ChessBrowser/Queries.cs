@@ -104,9 +104,7 @@ namespace ChessBrowser
           // Open a connection
           conn.Open();
 
-                    // TODO:
-                    //       Generate and execute an SQL command,
-                    //       then parse the results into an appropriate string and return it.
+
 
                     MySqlCommand command = conn.CreateCommand();
 
