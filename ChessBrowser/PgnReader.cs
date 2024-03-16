@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -49,7 +50,14 @@ namespace ChessBrowser
                     }
                     else if (line.StartsWith("[Date"))
                     {
-                        currentGame.Date = DateTime.Parse(ExtractContentInQuotes(line));
+                        if (DateTime.TryParse(ExtractContentInQuotes(line), out DateTime parsedDate))
+                        {
+                            currentGame.Date = parsedDate;
+                        }
+                        else
+                        {
+                            currentGame.Date = new DateTime(0000, 1, 1);
+                        }
                     }
                     else if (line.StartsWith("[Round"))
                     {
