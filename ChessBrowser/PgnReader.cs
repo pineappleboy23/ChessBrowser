@@ -9,7 +9,7 @@ namespace ChessBrowser
 {
     internal class PgnReader
     {
-        public ChessGame PgnReader(string filePath)
+        public List<ChessGame> ReadGames(string filePath)
         {
             string pattern = "'([^']*)'";
             Regex regex = new Regex(pattern);
@@ -19,13 +19,16 @@ namespace ChessBrowser
 
                 foreach (string line in lines)
                 {
-                    if (line.StartsWith("["))
+                    if (line.StartsWith("[E"))
                     {
                         MatchCollection match = regex.Matches(line);
                     }
                 }
             }
+            catch (Exception ex)
+            {
 
+            }
     }
 
     }
