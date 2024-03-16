@@ -18,20 +18,28 @@ namespace ChessBrowser
             List<string> moves = new List<string>();
             foreach (var line in File.ReadLines(filePath))
             {
-                if (line.StartsWith("[Event"))
+                if (line.StartsWith("[Event "))
                 {
                     // Start of a new game
                     if (currentGame != null)
                     {
+
+                        currentGame.Moves = string.Join(" ", moves);
                         games.Add(currentGame);
+
+                        moves = new List<string>();
                     }
                     currentGame = new ChessGame();
-                    moves = new List<string>();
                 }
-                else if (!string.IsNullOrWhiteSpace(line))
+                if (!string.IsNullOrWhiteSpace(line))
                 {
                     // Extract game information
-                    if (line.StartsWith("[Event"))
+
+                    if (line.StartsWith("[EventD"))
+                    {
+                        currentGame.EventDate = DateTime.Parse(ExtractContentInQuotes(line));
+                    }
+                    else if (line.StartsWith("[Event"))
                     {
                         currentGame.Event = ExtractContentInQuotes(line);
                     }
@@ -43,10 +51,17 @@ namespace ChessBrowser
                     {
                         currentGame.Date = DateTime.Parse(ExtractContentInQuotes(line));
                     }
-                    // Add more conditions for other metadata fields if needed
                     else if (line.StartsWith("[Round"))
                     {
                         currentGame.Round = ExtractContentInQuotes(line);
+                    }
+                    else if (line.StartsWith("[WhiteElo"))
+                    {
+                        currentGame.WhiteElo = int.Parse(ExtractContentInQuotes(line));
+                    }
+                    else if (line.StartsWith("[BlackElo"))
+                    {
+                        currentGame.BlackElo = int.Parse(ExtractContentInQuotes(line));
                     }
                     else if (line.StartsWith("[White"))
                     {
@@ -58,23 +73,24 @@ namespace ChessBrowser
                     }
                     else if (line.StartsWith("[Result"))
                     {
-                        currentGame.Result = ExtractContentInQuotes(line);
+                        string result = ExtractContentInQuotes(line);
+                        if (result == "0-1")
+                        {
+                            currentGame.Result = "B";
+                        }
+                        else if(result == "1-0")
+                        {
+                            currentGame.Result = "W";
+                        }
+                        else
+                        {
+                            currentGame.Result = "D";
+                        }
                     }
-                    else if (line.StartsWith("[WhiteElo"))
-                    {
-                        currentGame.WhiteElo = int.Parse(ExtractContentInQuotes(line));
-                    }
-                    else if (line.StartsWith("[BlackElo"))
-                    {
-                        currentGame.BlackElo = int.Parse(ExtractContentInQuotes(line));
-                    }
+                    
                     else if (line.StartsWith("[ECO"))
                     {
                         currentGame.ECO = ExtractContentInQuotes(line);
-                    }
-                    else if (line.StartsWith("[EventDate"))
-                    {
-                        currentGame.EventDate = DateTime.Parse(ExtractContentInQuotes(line));
                     }
                     else
                     {
@@ -87,7 +103,6 @@ namespace ChessBrowser
             // Add the last game
             if (currentGame != null)
             {
-                currentGame.Moves = string.Join(" ", moves);
                 games.Add(currentGame);
             }
 
