@@ -31,20 +31,18 @@ namespace ChessBrowser
       // assuimg you've typed a user and password in the GUI
       string connection = mainPage.GetConnectionString();
 
+
             // TODO:
             //       Load and parse the PGN file
             //       We recommend creating separate libraries to represent chess data and load the file
-            var reader = new PgnReader();
-            var games = reader.ReadGames(PGNfilename);
-        
 
-      // TODO:
-      //       Use this to tell the GUI's progress bar how many total work steps there are
-      //       For example, one iteration of your main upload loop could be one work step
-      //mainPage.SetNumWorkItems( ... );
+            // TODO:
+            //       Use this to tell the GUI's progress bar how many total work steps there are
+            //       For example, one iteration of your main upload loop could be one work step
+            //       mainPage.SetNumWorkItems( ... );
 
 
-      using ( MySqlConnection conn = new MySqlConnection( connection ) )
+            using ( MySqlConnection conn = new MySqlConnection( connection ) )
       {
         try
         {
