@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 /*
   Author: Daniel Kopta and ...
@@ -49,111 +50,82 @@ namespace ChessBrowser
 
             using (MySqlConnection conn = new MySqlConnection(connection))
             {
-
                 try
                 {
                     // Open a connection
                     conn.Open();
 
-                    // TODO:
-                    //       iterate through your data and generate appropriate insert commands
-                    string[] queries = {
-                        "INSERT INTO Players (Name, Elo) VALUES (@BlackPlayer, @Elo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @Elo)",
-                        "INSERT INTO Players (Name, Elo) VALUES (@WhitePlayer, @Elo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @Elo)",
-                        "INSERT IGNORE INTO Events(Name, Site, Date) VALUES (@Name, @Site, @Date)",
-                        "INSERT INTO Games (Round, Result, Moves, BlackPlayer, WhitePlayer, eID) VALUES (@Round, @Result, @Moves, @blackPlayerID, @whitePlayerID, @eventID)"
-                    };
-
+                    // Iterate through games
                     foreach (ChessGame game in games)
                     {
-                        string eid_data = "SELECT eID FROM Events WHERE Name = @Name AND Site = @Site AND Date = @Date";
-
-                        using (MySqlCommand command = new MySqlCommand(eid_data, conn))
+                        using (MySqlTransaction transaction = conn.BeginTransaction())
                         {
-                            command.Parameters.AddWithValue("@Name", game.Event);
-                            command.Parameters.AddWithValue("@Site", game.Site);
-                            command.Parameters.AddWithValue("@Date", game.Date);
+                            try
+                            {
+                                string[] queries = {
+                        "INSERT INTO Players (Name, Elo) VALUES (@BlackPlayer, @BlackElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @BlackElo)",
+                        "INSERT INTO Players (Name, Elo) VALUES (@WhitePlayer, @WhiteElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @WhiteElo)",
+                        "INSERT IGNORE INTO Events(Name, Site, Date) VALUES (@Event, @Site, @Date)",
+                        "INSERT INTO Games (Round, Result, Moves, BlackPlayer, WhitePlayer, eID) VALUES (@Round, @Result, @Moves, " +
+                        "(SELECT pID FROM Players WHERE Name = @BlackPlayer), " +
+                        "(SELECT pID FROM Players WHERE Name = @WhitePlayer), " +
+                        "(SELECT eID FROM Events WHERE Name = @Event AND Site = @Site AND Date = @Date))"
+                    };
 
-                            object result = command.ExecuteScalar();
-                            game.eid = int.Parse(result.ToString());
+                                foreach (string query in queries)
+                                {
+                                    using (MySqlCommand command = new MySqlCommand(query, conn, transaction))
+                                    {
+                                        command.Parameters.AddWithValue("@BlackPlayer", game.Black);
+                                        command.Parameters.AddWithValue("@WhitePlayer", game.White);
+                                        command.Parameters.AddWithValue("@BlackElo", game.BlackElo);
+                                        command.Parameters.AddWithValue("@WhiteElo", game.WhiteElo);
+                                        command.Parameters.AddWithValue("@Event", game.Event);
+                                        command.Parameters.AddWithValue("@Site", game.Site);
+                                        command.Parameters.AddWithValue("@Date", game.Date);
+                                        command.Parameters.AddWithValue("@Round", game.Round);
+                                        command.Parameters.AddWithValue("@Result", game.Result);
+                                        command.Parameters.AddWithValue("@Moves", game.Moves);
+
+                                        command.ExecuteNonQuery();
+                                    }
+                                }
+
+                                transaction.Commit();
+
+                                // Notify GUI that one work step has completed
+                                await mainPage.NotifyWorkItemCompleted();
+                            }
+                            catch (Exception ex)
+                            {
+                                transaction.Rollback();
+                                System.Diagnostics.Debug.WriteLine("Transaction failed: " + ex.Message);
+                            }
                         }
-
-                        string wp_id = "SELECT pID FROM Players WHERE Name = @Name";
-
-                        using (MySqlCommand command = new MySqlCommand(wp_id, conn))
-                        {
-                            command.Parameters.AddWithValue("@Name", game.White);
-
-                            object result = command.ExecuteScalar();
-                            game.wpID = int.Parse(result.ToString());
-                        }
-                        string bp_id = "SELECT pID FROM Players WHERE Name = @Name";
-
-                        using (MySqlCommand command = new MySqlCommand(bp_id, conn))
-                        {
-                            command.Parameters.AddWithValue("@Name", game.White);
-
-                            object result = command.ExecuteScalar();
-                            game.bpID = int.Parse(result.ToString());
-                        }
-
-                        using (MySqlCommand command = new MySqlCommand(queries[0], conn))
-                        {
-                            command.Parameters.AddWithValue("@Name", game.White);
-                            command.Parameters.AddWithValue("@Elo", game.WhiteElo);
-                            command.ExecuteNonQuery();
-                        }
-                        using (MySqlCommand command = new MySqlCommand(queries[1], conn))
-                        {
-                            command.Parameters.AddWithValue("@Name", game.Black);
-                            command.Parameters.AddWithValue("@Elo", game.BlackElo);
-                            command.ExecuteNonQuery();
-                        }
-                        using (MySqlCommand command = new MySqlCommand(queries[2], conn))
-                        {
-                            command.Parameters.AddWithValue("@Name", game.White);
-                            command.Parameters.AddWithValue("@Site", game.WhiteElo);
-                            command.Parameters.AddWithValue("@Date", game.EventDate);
-                            command.ExecuteNonQuery();
-                        }
-                        using (MySqlCommand command = new MySqlCommand(queries[3], conn))
-                        {
-                            command.Parameters.AddWithValue("@Round", game.Round);
-                            command.Parameters.AddWithValue("@Result", game.Result);
-                            command.Parameters.AddWithValue("@Moves", game.Moves);
-                            command.Parameters.AddWithValue("@BlackPlayer", game.bpID);
-                            command.Parameters.AddWithValue("@WhitePlayer", game.wpID);
-                            command.Parameters.AddWithValue("@eID", game.eid);
-                            command.ExecuteNonQuery();
-                        }
-
-                        // TODO:
-                        //       Use this inside a loop to tell the GUI that one work step has completed:
-                        await mainPage.NotifyWorkItemCompleted();
                     }
                 }
                 catch (Exception e)
                 {
-                    System.Diagnostics.Debug.WriteLine(e.Message);
+                    System.Diagnostics.Debug.WriteLine("An error occurred: " + e.Message);
                 }
-
             }
+
         }
 
-            /// <summary>
-            /// Queries the database for games that match all the given filters.
-            /// The filters are taken from the various controls in the GUI.
-            /// </summary>
-            /// <param name="white">The white player, or null if none</param>
-            /// <param name="black">The black player, or null if none</param>
-            /// <param name="opening">The first move, e.g. "1.e4", or null if none</param>
-            /// <param name="winner">The winner as "W", "B", "D", or null if none</param>
-            /// <param name="useDate">True if the filter includes a date range, False otherwise</param>
-            /// <param name="start">The start of the date range</param>
-            /// <param name="end">The end of the date range</param>
-            /// <param name="showMoves">True if the returned data should include the PGN moves</param>
-            /// <returns>A string separated by newlines containing the filtered games</returns>
-            internal static string PerformQuery(string white, string black, string opening, string winner, bool useDate, DateTime start, DateTime end, bool showMoves, MainPage mainPage)
+        /// <summary>
+        /// Queries the database for games that match all the given filters.
+        /// The filters are taken from the various controls in the GUI.
+        /// </summary>
+        /// <param name="white">The white player, or null if none</param>
+        /// <param name="black">The black player, or null if none</param>
+        /// <param name="opening">The first move, e.g. "1.e4", or null if none</param>
+        /// <param name="winner">The winner as "W", "B", "D", or null if none</param>
+        /// <param name="useDate">True if the filter includes a date range, False otherwise</param>
+        /// <param name="start">The start of the date range</param>
+        /// <param name="end">The end of the date range</param>
+        /// <param name="showMoves">True if the returned data should include the PGN moves</param>
+        /// <returns>A string separated by newlines containing the filtered games</returns>
+        internal static string PerformQuery(string white, string black, string opening, string winner, bool useDate, DateTime start, DateTime end, bool showMoves, MainPage mainPage)
             {
                 // This will build a connection string to your user's database on atr,
                 // assuimg you've typed a user and password in the GUI
