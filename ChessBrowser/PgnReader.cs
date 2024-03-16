@@ -8,109 +8,78 @@ using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ChessBrowser
-{ 
+{
     public class PgnReader
     {
-        public List<ChessGame> ReadGames(string filePath)
-        {
-            List<ChessGame> games = new List<ChessGame>();
-
-            try
+            public List<ChessGame> ParsePgn(string filePath)
             {
-                string[] lines = File.ReadAllLines(filePath);
-                List<List<string>> blocks = new List<List<string>>();
-                List<string> currentBlock = new List<string>();
+                List<ChessGame> games = new List<ChessGame>();
+                ChessGame currentGame = null;
 
-                foreach (string line in lines)
+                List<string> moves = new List<string>();
+                foreach (var line in File.ReadLines(filePath))
                 {
-                    if (string.IsNullOrWhiteSpace(line))
+                    if (line.StartsWith("[Event"))
                     {
-                        if (currentBlock.Count > 0)
+                        // Start of a new game
+                        if (currentGame != null)
                         {
-                            blocks.Add(currentBlock);
-                            currentBlock = new List<string>();
+                            games.Add(currentGame);
+                        }
+                        currentGame = new ChessGame();
+                        moves = new List<string>();
+                    }
+                    else if (currentGame != null && line != "")
+                    {
+                        // Extract game information
+                        if (line.StartsWith("["))
+                        {
+                            string[] parts = ExtractContentInQuotes(line);
+                            switch (parts[0])
+                            {
+                                case "Event": currentGame.Event = parts[1]; break;
+                                case "Site": currentGame.Site = parts[1]; break;
+                                case "Date": currentGame.Date = DateTime.Parse(parts[1]); break;
+                                case "Round": currentGame.Round = parts[1]; break;
+                                case "White": currentGame.White = parts[1]; break;
+                                case "Black": currentGame.Black = parts[1]; break;
+                                case "Result": currentGame.Result = parts[1]; break;
+                                case "WhiteElo": currentGame.WhiteElo = int.Parse(parts[1]); break;
+                                case "BlackElo": currentGame.BlackElo = int.Parse(parts[1]); break;
+                                case "ECO": currentGame.ECO = parts[1]; break;
+                                case "EventDate": currentGame.EventDate = DateTime.Parse(parts[1]); break;
+                            }
+                        }
+                        else
+                        {
+                            // Moves
+                            moves.Add(line);
                         }
                     }
-                    else
-                    {
-                        currentBlock.Add(line);
-                    }
                 }
 
-                if (currentBlock.Count > 0)
+                // Add the last game
+                if (currentGame != null)
                 {
-                    blocks.Add(currentBlock);
+                    currentGame.Moves = string.Join(" ", moves);
+                    games.Add(currentGame);
                 }
 
-                foreach (List<string> block in blocks)
-                {
-                    ChessGame game = new ChessGame();
-
-                    // Extract data from the block
-                    foreach (string line in block)
-                    {
-                        if (line.StartsWith("[Event "))
-                            game.Event = GetValueFromTag(line);
-                        else if (line.StartsWith("[Site "))
-                            game.Site = GetValueFromTag(line);
-                        else if (line.StartsWith("[Date "))
-                            game.Date = GetValueFromTag(line);
-                        else if (line.StartsWith("[Round "))
-                            game.Round = GetValueFromTag(line);
-                        else if (line.StartsWith("[White "))
-                            game.White = GetValueFromTag(line);
-                        else if (line.StartsWith("[Black "))
-                            game.Black = GetValueFromTag(line);
-                        else if (line.StartsWith("[Result "))
-                            game.Result = GetValueFromTag(line);
-                        else if (line.StartsWith("[WhiteElo "))
-                            game.WhiteElo = GetValueFromTag(line);
-                        else if (line.StartsWith("[BlackElo "))
-                            game.BlackElo = GetValueFromTag(line);
-                        else if (line.StartsWith("[EventDate "))
-                            game.EventDate = GetValueFromTag(line);
-                    }
-                    if (GamesCheck(game))
-                    {
-                        games.Add(game);
-                    }
-                    
-                }
+                return games;
             }
-            catch (Exception ex)
+
+            private string[] ExtractContentInQuotes(string line)
             {
-                Console.WriteLine("An error occurred: " + ex.Message);
-            }
-
-            return games;
-        }
-
-        private string GetValueFromTag(string line)
-        {
-            int startIndex = line.IndexOf('"') + 1;
-            int endIndex = line.LastIndexOf('"');
-            return line.Substring(startIndex, endIndex - startIndex);
-        }
-
-        private bool GamesCheck(ChessGame game)
-        {
-            if (string.IsNullOrEmpty(game.Event) ||
-                string.IsNullOrEmpty(game.Site) ||
-                string.IsNullOrEmpty(game.Date) ||
-                string.IsNullOrEmpty(game.Round) ||
-                string.IsNullOrEmpty(game.White) ||
-                string.IsNullOrEmpty(game.Black) ||
-                string.IsNullOrEmpty(game.Result) ||
-                string.IsNullOrEmpty(game.WhiteElo) ||
-                string.IsNullOrEmpty(game.BlackElo) ||
-                string.IsNullOrEmpty(game.EventDate))
+                List<string> result = new List<string>();
+                Regex regex = new Regex("\"(.*?)\"");
+                MatchCollection matches = regex.Matches(line);
+                foreach (Match match in matches)
                 {
-                    return false;
+                    result.Add(match.Groups[1].Value);
                 }
-            else
-            {
-                return true;
+                return result.ToArray();
             }
         }
-    }
+
+    
 }
