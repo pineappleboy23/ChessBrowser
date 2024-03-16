@@ -58,6 +58,7 @@ namespace ChessBrowser
                     // Iterate through games
                     foreach (ChessGame game in games)
                     {
+                        //System.Diagnostics.Debug.WriteLine(game);
                         using (MySqlTransaction transaction = conn.BeginTransaction())
                         {
                             try
@@ -66,7 +67,7 @@ namespace ChessBrowser
                         "INSERT IGNORE INTO Players (Name, Elo) VALUES (@BlackPlayer, @BlackElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @BlackElo)",
                         "INSERT IGNORE INTO Players (Name, Elo) VALUES (@WhitePlayer, @WhiteElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @WhiteElo)",
                         "INSERT IGNORE INTO Events(Name, Site, Date) VALUES (@Event, @Site, @Date)",
-                        "INSERT INTO Games (Round, Result, Moves, BlackPlayer, WhitePlayer, eID) VALUES (@Round, @Result, @Moves, " +
+                        "INSERT IGNORE INTO Games (Round, Result, Moves, BlackPlayer, WhitePlayer, eID) VALUES (@Round, @Result, @Moves, " +
                         "(SELECT pID FROM Players WHERE Name = @BlackPlayer), " +
                         "(SELECT pID FROM Players WHERE Name = @WhitePlayer), " +
                         "(SELECT eID FROM Events WHERE Name = @Event AND Site = @Site AND Date = @Date))"
