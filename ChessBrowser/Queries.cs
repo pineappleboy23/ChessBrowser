@@ -63,8 +63,8 @@ namespace ChessBrowser
                             try
                             {
                                 string[] queries = {
-                        "INSERT INTO Players (Name, Elo) VALUES (@BlackPlayer, @BlackElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @BlackElo)",
-                        "INSERT INTO Players (Name, Elo) VALUES (@WhitePlayer, @WhiteElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @WhiteElo)",
+                        "INSERT IGNORE INTO Players (Name, Elo) VALUES (@BlackPlayer, @BlackElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @BlackElo)",
+                        "INSERT IGNORE INTO Players (Name, Elo) VALUES (@WhitePlayer, @WhiteElo) ON DUPLICATE KEY UPDATE Elo = GREATEST(Elo, @WhiteElo)",
                         "INSERT IGNORE INTO Events(Name, Site, Date) VALUES (@Event, @Site, @Date)",
                         "INSERT INTO Games (Round, Result, Moves, BlackPlayer, WhitePlayer, eID) VALUES (@Round, @Result, @Moves, " +
                         "(SELECT pID FROM Players WHERE Name = @BlackPlayer), " +
