@@ -38,7 +38,14 @@ namespace ChessBrowser
 
                     if (line.StartsWith("[EventD"))
                     {
-                        currentGame.EventDate = DateTime.Parse(ExtractContentInQuotes(line));
+                        if (DateTime.TryParse(ExtractContentInQuotes(line), out DateTime parsedDate))
+                        {
+                            currentGame.EventDate = parsedDate;
+                        }
+                        else
+                        {
+                            currentGame.EventDate = new DateTime(0000, 1, 1);
+                        }
                     }
                     else if (line.StartsWith("[Event"))
                     {
