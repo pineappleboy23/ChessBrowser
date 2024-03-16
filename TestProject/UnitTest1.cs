@@ -40,9 +40,19 @@ namespace TestProject
             var games = PgnReader.ReadGames(filePath);
             //List<ChessGame>
 
-            ChessGame game1 = games[0];
+            ChessGame game = games[0];
 
-            Assert.Equals(game1.Event, "4. IIFL Wealth Mumbai Op");
+            Assert.Equals(game.Event, "4. IIFL Wealth Mumbai Op");
+            Assert.AreEqual("Mumbai IND", game.Site);
+            Assert.AreEqual("2018.12.31", game.Date);
+            Assert.AreEqual("2.9", game.Round);
+            Assert.AreEqual("Sundararajan, Kidambi", game.White);
+            Assert.AreEqual("Ziatdinov, Raset", game.Black);
+            Assert.AreEqual("1/2-1/2", game.Result);
+            Assert.AreEqual("2458", game.WhiteElo);
+            Assert.AreEqual("2252", game.BlackElo);
+            Assert.AreEqual("A25", game.ECO);
+            Assert.AreEqual("2018.12.30", game.EventDate);
         }
     }
 }
