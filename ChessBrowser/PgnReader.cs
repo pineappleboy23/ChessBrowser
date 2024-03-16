@@ -38,13 +38,13 @@ namespace ChessBrowser
 
                     if (line.StartsWith("[EventD"))
                     {
-                        if (DateTime.TryParse(ExtractContentInQuotes(line), out DateTime parsedDate))
+                        if (!line.Contains("?"))
                         {
-                            currentGame.EventDate = parsedDate;
+                            currentGame.EventDate = DateTime.Parse(ExtractContentInQuotes(line));
                         }
                         else
                         {
-                            currentGame.EventDate = new DateTime(0000, 1, 1);
+                            currentGame.EventDate = DateTime.MinValue;
                         }
                     }
                     else if (line.StartsWith("[Event"))
@@ -57,13 +57,13 @@ namespace ChessBrowser
                     }
                     else if (line.StartsWith("[Date"))
                     {
-                        if (DateTime.TryParse(ExtractContentInQuotes(line), out DateTime parsedDate))
+                        if (!line.Contains("?"))
                         {
-                            currentGame.Date = parsedDate;
+                            currentGame.Date = DateTime.Parse(ExtractContentInQuotes(line));
                         }
                         else
                         {
-                            currentGame.Date = new DateTime(0000, 1, 1);
+                            currentGame.Date = DateTime.MinValue;
                         }
                     }
                     else if (line.StartsWith("[Round"))
@@ -93,7 +93,7 @@ namespace ChessBrowser
                         {
                             currentGame.Result = "B";
                         }
-                        else if(result == "1-0")
+                        else if (result == "1-0")
                         {
                             currentGame.Result = "W";
                         }
@@ -102,7 +102,7 @@ namespace ChessBrowser
                             currentGame.Result = "D";
                         }
                     }
-                    
+
                     else if (line.StartsWith("[ECO"))
                     {
                         currentGame.ECO = ExtractContentInQuotes(line);
