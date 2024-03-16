@@ -16,6 +16,7 @@ namespace ChessBrowser
 {
   internal class Queries
   {
+        //test
 
     /// <summary>
     /// This function runs when the upload button is pressed.
