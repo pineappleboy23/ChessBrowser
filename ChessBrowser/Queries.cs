@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -30,9 +31,12 @@ namespace ChessBrowser
       // assuimg you've typed a user and password in the GUI
       string connection = mainPage.GetConnectionString();
 
-      // TODO:
-      //       Load and parse the PGN file
-      //       We recommend creating separate libraries to represent chess data and load the file
+            // TODO:
+            //       Load and parse the PGN file
+            //       We recommend creating separate libraries to represent chess data and load the file
+            var reader = new PgnReader();
+            var games = reader.ReadGames(PGNfilename);
+        
 
       // TODO:
       //       Use this to tell the GUI's progress bar how many total work steps there are
@@ -83,6 +87,7 @@ namespace ChessBrowser
     {
       // This will build a connection string to your user's database on atr,
       // assuimg you've typed a user and password in the GUI
+      //return "server=atr.eng.utah.edu;database=" + database.Text + ";uid=" + username.Text + ";password=" + password.Text;
       string connection = mainPage.GetConnectionString();
 
       // Build up this string containing the results from your query
@@ -92,6 +97,8 @@ namespace ChessBrowser
       // (see below return statement)
       int numRows = 0;
 
+
+
       using ( MySqlConnection conn = new MySqlConnection( connection ) )
       {
         try
@@ -99,10 +106,88 @@ namespace ChessBrowser
           // Open a connection
           conn.Open();
 
-          // TODO:
-          //       Generate and execute an SQL command,
-          //       then parse the results into an appropriate string and return it.
-        }
+                    // TODO:
+                    //       Generate and execute an SQL command,
+                    //       then parse the results into an appropriate string and return it.
+
+                    MySqlCommand command = conn.CreateCommand();
+
+                    command.CommandText = "SELECT * FROM Games " +
+                        "JOIN Players p1 ON Games.WhitePlayer = p1.pID " +
+                        "JOIN Players p2 ON Games.BlackPlayer = p2.pID " +
+                        "JOIN Events ON Games.eID = Events.eID";
+
+                    if (white != null)
+                    {
+                        command.CommandText += " AND p1.Name = @varwh";
+                        command.Parameters.AddWithValue("@varwh", white);
+                    }
+                    if (black != null)
+                    {
+                        command.CommandText += " AND p2.Name = @varwb";
+                        command.Parameters.AddWithValue("@varwb", black); // Corrected parameter name
+                    }
+                    if (opening != null)
+                    {
+                        command.CommandText += " AND Games.Moves LIKE @varo";
+                        command.Parameters.AddWithValue("@varo", opening + "%"); // Concatenate wildcard with parameter value
+                    }
+                    if (winner != null)
+                    {
+                        command.CommandText += " AND Games.Result = @varw";
+                        command.Parameters.AddWithValue("@varw", winner);
+                    }
+                    if (useDate)
+                    {
+                        command.CommandText += " AND Events.Date BETWEEN @varsd AND @vared";
+                        command.Parameters.AddWithValue("@varsd", start);
+                        command.Parameters.AddWithValue("@vared", end);
+                    }
+
+                    command.CommandText += ";";
+
+
+                    using (MySqlDataReader reader = command.ExecuteReader())
+                    {
+                        while ( reader.Read())
+                        {
+                            numRows += 1;
+                            
+                            parsedResult += "Event: ";
+                            parsedResult += reader[12];
+
+                            parsedResult += "\nSite: ";
+                            parsedResult += reader[13];
+
+                            parsedResult += "\nDate: ";
+                            parsedResult += reader[14];
+
+                            parsedResult += "\nWhite: ";
+                            parsedResult += reader[6];
+                            parsedResult += " (";
+                            parsedResult += reader[7];
+                            parsedResult += ")";
+
+
+                            parsedResult += "\nBlack: ";
+                            parsedResult += reader[9];
+                            parsedResult += " (";
+                            parsedResult += reader[10];
+                            parsedResult += ")";
+
+                            parsedResult += "\nResult: ";
+                            parsedResult += reader[1];
+
+                            if (showMoves)
+                            {
+                                parsedResult += "\n ";
+                                parsedResult += reader[2];
+                            }
+
+                            parsedResult += "\n ";
+                        }
+                    }
+                }
         catch ( Exception e )
         {
           System.Diagnostics.Debug.WriteLine( e.Message );

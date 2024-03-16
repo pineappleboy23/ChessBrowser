@@ -73,6 +73,7 @@ namespace ChessBrowser
                     if (GamesCheck(game))
                     {
                         games.Add(game);
+                        Console.WriteLine(game);
                     }
                     
                 }
